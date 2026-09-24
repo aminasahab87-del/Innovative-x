@@ -13,9 +13,12 @@ on:
       - master
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: Build APK
+    name: Build APK & Publish Release
     runs-on: ubuntu-latest
 
     steps:
@@ -50,36 +53,37 @@ jobs:
             find app/build/outputs/apk -name "*.apk" -exec cp {} output/InnovateX-App-debug.apk \;
           fi
 
-      - name: Upload APK Artifact (Download from Actions Summary)
+      - name: Upload APK Artifact (Actions Summary)
         uses: actions/upload-artifact@v4
         with:
           name: InnovateX-Android-APK
           path: output/*.apk
           retention-days: 30
 
-      - name: Create GitHub Release & Publish APK
+      - name: Create GitHub Release & Attach APK
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0-release' }}
-          name: InnovateX Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0-release' }}
+          name: InnovateX Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0' }}
           body: |
-            ## 🚀 InnovateX Android App
-            
-            Download the pre-built Android APK file below to install directly on your Android phone or emulator!
-            
-            ### Included Features:
-            - **Submit & Explore Innovations**: Discover student science projects, prototypes, and inventions.
-            - **Gallery Photo & Video Upload**: Pick images and videos straight from your phone's gallery.
-            - **Star Rating & Reviews**: Review and rate published projects with detailed feedback.
-            - **Admin & Reviewer Portal**: Full approval & moderation workflow with passcode security.
-            - **Official InnovateX Branding**: High-resolution logo and custom adaptive launcher icon.
-            
-            ### 📱 How to Install on Android:
-            1. Click on `InnovateX-App-debug.apk` in the **Assets** section below to download.
-            2. Open the downloaded file on your Android phone.
-            3. If prompted, enable **"Allow from this source"** in settings to allow installation.
-            4. Tap **Install** and open InnovateX!
+            ## 🚀 InnovateX App - Latest Build
+
+            Download the pre-compiled Android APK (`InnovateX-App-debug.apk`) below and install directly on your Android phone!
+
+            ### 🌟 Latest Features Included:
+            - **🎥 Zoom Live Classes**: Interactive STEM & robotics live classes with Meeting ID & Password sharing.
+            - **🔒 Payment Lock & Scanner**: 250 PKR / 10 Days subscription with official QR Scanner & Admin TRX verification workflow.
+            - **🖼️ Profile Customization**: Gallery picker, manual image URL input, and preset avatar choices.
+            - **⭐ Star Rating & Reviews**: Rate and review student projects with star ratings.
+            - **📸 Gallery Media Upload**: Pick photos and videos directly from gallery for submissions.
+            - **🛡️ Admin & Reviewer Portal**: Full project review, badge assignment, and payment verification system.
+
+            ### 📱 How to Install:
+            1. Scroll down to **Assets** and tap **`InnovateX-App-debug.apk`** to download.
+            2. Tap the downloaded APK on your phone.
+            3. If prompted, select **"Allow from this source"** to enable installation.
+            4. Enjoy InnovateX!
           files: output/*.apk
           draft: false
           prerelease: false
