@@ -33,24 +33,28 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
+
+      - name: Ensure .env file exists
+        run: |
+          if [ ! -f .env ]; then
+            echo "GEMINI_API_KEY=MY_GEMINI_API_KEY" > .env
+          fi
 
       - name: Make gradlew executable
         run: chmod +x gradlew
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --no-configuration-cache --stacktrace
 
       - name: Prepare APK Output
         run: |
           mkdir -p output
           if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp app/build/outputs/apk/debug/app-debug.apk output/InnovateX-App-debug.apk
-            echo "APK successfully prepared at output/InnovateX-App-debug.apk"
+            cp app/build/outputs/apk/debug/app-debug.apk output/InnovateX-App-v1.1.0.apk
+            echo "APK successfully prepared at output/InnovateX-App-v1.1.0.apk"
           else
             echo "Searching for APK files..."
-            find app/build/outputs/apk -name "*.apk" -exec cp {} output/InnovateX-App-debug.apk \;
+            find app/build/outputs/apk -name "*.apk" -exec cp {} output/InnovateX-App-v1.1.0.apk \;
           fi
 
       - name: Upload APK Artifact (Actions Summary)
@@ -61,17 +65,18 @@ jobs:
           retention-days: 30
 
       - name: Create GitHub Release & Attach APK
-        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0-release' }}
-          name: InnovateX Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.1.0' }}
+          artifacts: "output/*.apk"
+          tag: "v1.1.0"
+          name: "InnovateX Release v1.1.0"
           body: |
-            ## 🚀 InnovateX App - Latest Build
+            ## 🚀 InnovateX App - Official Release v1.1.0
 
-            Download the pre-compiled Android APK (`InnovateX-App-debug.apk`) below and install directly on your Android phone!
+            Download the pre-compiled Android APK (`InnovateX-App-v1.1.0.apk`) below and install directly on your Android phone!
 
-            ### 🌟 Latest Features Included:
+            ### 🌟 Key Features Included:
             - **🎥 Zoom Live Classes**: Interactive STEM & robotics live classes with Meeting ID & Password sharing.
             - **🔒 Payment Lock & Scanner**: 250 PKR / 10 Days subscription with official QR Scanner & Admin TRX verification workflow.
             - **🖼️ Profile Customization**: Gallery picker, manual image URL input, and preset avatar choices.
@@ -80,12 +85,10 @@ jobs:
             - **🛡️ Admin & Reviewer Portal**: Full project review, badge assignment, and payment verification system.
 
             ### 📱 How to Install:
-            1. Scroll down to **Assets** and tap **`InnovateX-App-debug.apk`** to download.
+            1. Scroll down to **Assets** and tap **`InnovateX-App-v1.1.0.apk`** to download.
             2. Tap the downloaded APK on your phone.
             3. If prompted, select **"Allow from this source"** to enable installation.
             4. Enjoy InnovateX!
-          files: output/*.apk
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          allowUpdates: true
+          makeLatest: true
+          token: ${{ secrets.GITHUB_TOKEN }}
