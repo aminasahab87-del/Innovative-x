@@ -97,9 +97,19 @@ fun InnovateXApp(
 
     val showBottomBar = currentRoute in topLevelRoutes
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+    if (currentUser == null) {
+        AuthScreen(
+            viewModel = viewModel,
+            onAuthSuccess = {
+                // Successful login or registration updates currentUser StateFlow
+                // which automatically transitions into the main app
+            },
+            modifier = modifier
+        )
+    } else {
+        Scaffold(
+            modifier = modifier.fillMaxSize(),
+            snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(
@@ -125,7 +135,7 @@ fun InnovateXApp(
                         modifier = Modifier.testTag("nav_home")
                     )
 
-                    // Explore
+                    // Gallery / Explore
                     NavigationBarItem(
                         selected = currentRoute == Screen.Explore.route,
                         onClick = {
@@ -138,10 +148,10 @@ fun InnovateXApp(
                         icon = {
                             Icon(
                                 imageVector = if (currentRoute == Screen.Explore.route) Icons.Default.Explore else Icons.Outlined.Explore,
-                                contentDescription = "Explore"
+                                contentDescription = "Gallery"
                             )
                         },
-                        label = { Text("Explore") },
+                        label = { Text("Gallery") },
                         modifier = Modifier.testTag("nav_explore")
                     )
 
@@ -376,7 +386,7 @@ fun InnovateXApp(
                 AuthScreen(
                     viewModel = viewModel,
                     onAuthSuccess = {
-                        navController.navigate(Screen.Profile.route) {
+                        navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Home.route)
                         }
                     }
@@ -384,4 +394,5 @@ fun InnovateXApp(
             }
         }
     }
+}
 }

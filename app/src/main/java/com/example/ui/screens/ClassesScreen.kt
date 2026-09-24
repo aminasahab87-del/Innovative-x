@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.AlertDialog
@@ -51,15 +52,20 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.BorderStroke
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -70,6 +76,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import com.example.R
 import com.example.data.model.LiveClassSession
 import com.example.ui.viewmodel.InnovateXViewModel
@@ -81,36 +88,19 @@ fun ClassesScreen(
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
-    val isUnlocked by viewModel.isClassesUnlocked.collectAsStateWithLifecycle()
     val liveClasses by viewModel.allLiveClasses.collectAsStateWithLifecycle()
     val currentUser by viewModel.currentUser.collectAsStateWithLifecycle()
     val latestPaymentReq by viewModel.latestUserPaymentRequest.collectAsStateWithLifecycle()
+    val paymentConfig by viewModel.paymentConfig.collectAsStateWithLifecycle()
 
-    val isActuallyUnlocked = isUnlocked || latestPaymentReq?.status == "APPROVED"
+    // Strict Access Control: Only users with APPROVED payment (or Admin) can view scheduled classes and Zoom credentials
+    val isAdmin = currentUser?.role == "ADMIN"
+    val isPaymentApproved = latestPaymentReq != null && latestPaymentReq?.status == "APPROVED"
+    val isActuallyUnlocked = isAdmin || isPaymentApproved
 
-    var showCreateClassDialog by remember { mutableStateOf(false) }
     var txnIdInput by remember { mutableStateOf("") }
     var isSubmitting by remember { mutableStateOf(false) }
     var verificationError by remember { mutableStateOf<String?>(null) }
-
-    // Dialog for creating/starting a Zoom Live class
-    if (showCreateClassDialog) {
-        CreateZoomClassDialog(
-            onDismiss = { showCreateClassDialog = false },
-            onCreate = { title, instructor, subject, dateTime, meetingId, password, link, desc ->
-                viewModel.createLiveClass(
-                    title, instructor, subject, dateTime, meetingId, password, link, desc
-                ) { success, err ->
-                    if (success) {
-                        showCreateClassDialog = false
-                        Toast.makeText(context, "Live Zoom Class Created!", Toast.LENGTH_SHORT).show()
-                    } else {
-                        Toast.makeText(context, err ?: "Error creating class", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        )
-    }
 
     Box(
         modifier = modifier
@@ -239,14 +229,14 @@ fun ClassesScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = "250 PKR",
+                                    text = "${paymentConfig.feeAmountPkr} PKR",
                                     fontSize = 32.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color.White
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "/ 10 Days Access",
+                                    text = "/ ${paymentConfig.validityDays} Days Access",
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.SemiBold,
                                     color = Color.White.copy(alpha = 0.9f),
@@ -257,7 +247,7 @@ fun ClassesScreen(
                             Spacer(modifier = Modifier.height(8.dp))
 
                             Text(
-                                text = "✓ Full Access to All Zoom Live Classes & Recording Links\n✓ Direct Meeting ID & Password Access\n✓ Q&A with Instructors for 10 Days",
+                                text = "✓ Full Access to All Zoom Live Classes & Recording Links\n✓ Direct Meeting ID & Password Access\n✓ Q&A with Instructors for ${paymentConfig.validityDays} Days",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = Color.White.copy(alpha = 0.95f),
                                 textAlign = TextAlign.Start,
@@ -267,7 +257,7 @@ fun ClassesScreen(
                     }
                 }
 
-                // Payment Scanner QR Code Display Card (Official Uploaded Scanner)
+                // Payment Scanner QR Code Display Card (Custom Gallery Scanner or Default)
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -293,7 +283,7 @@ fun ClassesScreen(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "Scan QR Code to Pay 250 PKR",
+                                    text = "Scan QR Code to Pay ${paymentConfig.feeAmountPkr} PKR",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -301,15 +291,27 @@ fun ClassesScreen(
 
                             Spacer(modifier = Modifier.height(12.dp))
 
-                            // Payment Scanner Image (User Uploaded Official QR Scanner)
-                            Image(
-                                painter = painterResource(id = R.drawable.user_payment_qr_scanner),
-                                contentDescription = "Official Payment QR Scanner Code",
-                                modifier = Modifier
-                                    .size(220.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
-                            )
+                            // Payment Scanner Image (Custom Gallery Scanner or Official Default)
+                            if (!paymentConfig.scannerImageUri.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = paymentConfig.scannerImageUri,
+                                    contentDescription = "Payment QR Scanner Code",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(230.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+                                )
+                            } else {
+                                Image(
+                                    painter = painterResource(id = R.drawable.user_payment_qr_scanner),
+                                    contentDescription = "Official Payment QR Scanner Code",
+                                    modifier = Modifier
+                                        .size(230.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(12.dp))
+                                )
+                            }
 
                             Spacer(modifier = Modifier.height(12.dp))
 
@@ -321,7 +323,7 @@ fun ClassesScreen(
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Text(
-                                        text = "EasyPaisa / JazzCash / Bank Account:",
+                                        text = "${paymentConfig.paymentMethod} / Bank Account:",
                                         style = MaterialTheme.typography.labelSmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -333,14 +335,14 @@ fun ClassesScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = "0300-1234567 (InnovateX Classes)",
+                                            text = "${paymentConfig.accountNumber} (${paymentConfig.accountTitle})",
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = FontWeight.Bold,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                         IconButton(
                                             onClick = {
-                                                clipboardManager.setText(AnnotatedString("03001234567"))
+                                                clipboardManager.setText(AnnotatedString(paymentConfig.accountNumber))
                                                 Toast.makeText(context, "Account Number Copied!", Toast.LENGTH_SHORT).show()
                                             },
                                             modifier = Modifier.size(28.dp)
@@ -426,17 +428,6 @@ fun ClassesScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text("Send Payment TRX to Admin for Approval")
                             }
-
-                            // Demo Direct Unlock Button
-                            OutlinedButton(
-                                onClick = {
-                                    viewModel.unlockLiveClassesDirectly()
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Text("Direct Demo Unlock (Bypass Admin)", fontSize = 12.sp)
-                            }
                         }
                     }
                 }
@@ -471,7 +462,7 @@ fun ClassesScreen(
                                     )
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "10 Days Access Active",
+                                        text = if (isAdmin) "Admin Access Active" else "10 Days Access Active",
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium,
                                         color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -485,14 +476,19 @@ fun ClassesScreen(
                                 )
                             }
 
-                            Button(
-                                onClick = { showCreateClassDialog = true },
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Start Class", fontSize = 12.sp)
+                            if (isAdmin) {
+                                Surface(
+                                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Admin Verified",
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -525,9 +521,10 @@ fun ClassesScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("No Live Classes Scheduled Yet", fontWeight = FontWeight.Bold)
                                 Text(
-                                    text = "Click 'Start Class' above to schedule or share Zoom credentials.",
+                                    text = "Classes scheduled by Admin will appear here with live countdown and Zoom credentials.",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
@@ -567,6 +564,19 @@ fun LiveClassCard(
     onCopyPassword: () -> Unit,
     onJoinZoom: () -> Unit
 ) {
+    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(session.scheduledTimestamp) {
+        while (true) {
+            currentTime = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
+
+    val remainingMillis = session.scheduledTimestamp - currentTime
+    val isLiveNow = session.isLiveNow || (session.scheduledTimestamp > 0 && remainingMillis <= 0 && currentTime <= session.scheduledTimestamp + session.durationMinutes * 60 * 1000L)
+    val isEnded = session.scheduledTimestamp > 0 && (currentTime > session.scheduledTimestamp + session.durationMinutes * 60 * 1000L)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -583,12 +593,12 @@ fun LiveClassCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Surface(
-                    color = if (session.isLiveNow) Color(0xFFEF4444) else MaterialTheme.colorScheme.primaryContainer,
+                    color = if (isLiveNow) Color(0xFFEF4444) else MaterialTheme.colorScheme.primaryContainer,
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        text = if (session.isLiveNow) "• LIVE NOW" else session.subject,
-                        color = if (session.isLiveNow) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
+                        text = if (isLiveNow) "• LIVE NOW" else session.subject,
+                        color = if (isLiveNow) Color.White else MaterialTheme.colorScheme.onPrimaryContainer,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -618,7 +628,7 @@ fun LiveClassCard(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "Instructor: ${session.instructorName}",
+                    text = "Instructor: ${session.instructorName} • Duration: ${session.durationMinutes} Mins",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -629,6 +639,130 @@ fun LiveClassCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            // ⏳ Real-Time Scheduled Class Countdown Timer Section
+            if (isLiveNow) {
+                Surface(
+                    color = Color(0xFFEF4444).copy(alpha = 0.12f),
+                    border = BorderStroke(1.dp, Color(0xFFEF4444)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFEF4444))
+                            )
+                            Text(
+                                text = "🔴 CLASS IS LIVE NOW!",
+                                color = Color(0xFFDC2626),
+                                fontWeight = FontWeight.Black,
+                                fontSize = 13.sp
+                            )
+                        }
+                        Text(
+                            text = "In Session",
+                            color = Color(0xFFDC2626),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            } else if (remainingMillis > 0) {
+                val totalSeconds = remainingMillis / 1000
+                val days = totalSeconds / (24 * 3600)
+                val hours = (totalSeconds % (24 * 3600)) / 3600
+                val minutes = (totalSeconds % 3600) / 60
+                val seconds = totalSeconds % 60
+
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Timer,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Class Starts In (Live Countdown):",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (days > 0) {
+                                LiveTimerBlock(value = String.format("%02d", days), label = "Days")
+                                Text(":", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                            }
+                            LiveTimerBlock(value = String.format("%02d", hours), label = "Hours")
+                            Text(":", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                            LiveTimerBlock(value = String.format("%02d", minutes), label = "Mins")
+                            Text(":", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                            LiveTimerBlock(value = String.format("%02d", seconds), label = "Secs")
+                        }
+
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "Zoom room credentials unlocked • Join when timer finishes",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            } else if (isEnded) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Class Session Ended • Recording & Notes Available",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
 
             // Zoom Credentials Unlocked Box
             Surface(
@@ -681,126 +815,53 @@ fun LiveClassCard(
 
             Button(
                 onClick = onJoinZoom,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D8CFF)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isLiveNow) Color(0xFFEF4444) else Color(0xFF2D8CFF)
+                ),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(44.dp)
             ) {
-                Icon(imageVector = Icons.Default.VideoCall, contentDescription = null)
+                Icon(
+                    imageVector = if (isLiveNow) Icons.Default.Videocam else Icons.Default.VideoCall,
+                    contentDescription = null
+                )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Join Zoom Meeting", color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (isLiveNow) "🚀 Join Live Zoom Class Now" else "Join Zoom Meeting",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
 }
 
 @Composable
-fun CreateZoomClassDialog(
-    onDismiss: () -> Unit,
-    onCreate: (title: String, instructor: String, subject: String, dateTime: String, meetingId: String, password: String, link: String, desc: String) -> Unit
-) {
-    var title by remember { mutableStateOf("") }
-    var instructor by remember { mutableStateOf("") }
-    var subject by remember { mutableStateOf("") }
-    var dateTimeText by remember { mutableStateOf("Today, 6:00 PM") }
-    var zoomMeetingId by remember { mutableStateOf("") }
-    var zoomPassword by remember { mutableStateOf("") }
-    var zoomLink by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Start / Schedule Zoom Class") },
-        text = {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                item {
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        label = { Text("Class Title / Topic") },
-                        placeholder = { Text("e.g. Microcontroller Workshop") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = instructor,
-                        onValueChange = { instructor = it },
-                        label = { Text("Instructor Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = subject,
-                            onValueChange = { subject = it },
-                            label = { Text("Subject / Category") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = dateTimeText,
-                            onValueChange = { dateTimeText = it },
-                            label = { Text("Date & Time") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = zoomMeetingId,
-                            onValueChange = { zoomMeetingId = it },
-                            label = { Text("Zoom Meeting ID") },
-                            placeholder = { Text("842 9102 5521") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        OutlinedTextField(
-                            value = zoomPassword,
-                            onValueChange = { zoomPassword = it },
-                            label = { Text("Passcode") },
-                            placeholder = { Text("innovate123") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-                }
-                item {
-                    OutlinedTextField(
-                        value = zoomLink,
-                        onValueChange = { zoomLink = it },
-                        label = { Text("Direct Zoom Link") },
-                        placeholder = { Text("https://zoom.us/j/84291025521?pwd=...") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-                item {
-                    OutlinedTextField(
-                        value = description,
-                        onValueChange = { description = it },
-                        label = { Text("Description / What students will learn") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 2
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    if (title.isNotBlank() && zoomMeetingId.isNotBlank()) {
-                        val finalLink = if (zoomLink.isBlank()) "https://zoom.us/j/${zoomMeetingId.replace(" ", "")}" else zoomLink
-                        onCreate(title, instructor.ifBlank { "Instructor" }, subject.ifBlank { "STEM" }, dateTimeText, zoomMeetingId, zoomPassword, finalLink, description)
-                    }
-                }
-            ) {
-                Text("Publish Zoom Class")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+fun LiveTimerBlock(value: String, label: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Surface(
+            color = MaterialTheme.colorScheme.primary,
+            shape = RoundedCornerShape(6.dp),
+            modifier = Modifier.width(44.dp).height(32.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = value,
+                    color = Color.White,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 15.sp
+                )
             }
         }
-    )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = 9.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
+        )
+    }
 }
+

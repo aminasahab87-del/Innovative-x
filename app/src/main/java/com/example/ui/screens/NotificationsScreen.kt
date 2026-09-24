@@ -176,7 +176,9 @@ fun NotificationItemCard(
         NotificationType.PROJECT_FEATURED -> Pair(Icons.Default.Star, Color(0xFF8B5CF6))
         NotificationType.SUBMISSION_RECEIVED -> Pair(Icons.Default.Send, Color(0xFF6366F1))
         NotificationType.AI_REVIEW_COMPLETED -> Pair(Icons.Default.AutoAwesome, Color(0xFF9333EA))
-        NotificationType.SYSTEM -> Pair(Icons.Default.CheckCircle, Color(0xFF0284C7))
+        NotificationType.PEER_REVIEW_RECEIVED -> Pair(Icons.Default.Star, Color(0xFFF59E0B))
+        NotificationType.SYSTEM, null -> Pair(Icons.Default.CheckCircle, Color(0xFF0284C7))
+        else -> Pair(Icons.Default.CheckCircle, Color(0xFF0284C7))
     }
 
     val dateFormatter = remember { SimpleDateFormat("MMM dd, h:mm a", Locale.getDefault()) }

@@ -44,13 +44,13 @@ class InnovateXRepository(private val context: Context) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 FirebaseManager.initialize(context)
-                // Ensure sample data is populated if empty
-                var defaultUser = userDao.getUserByEmail("student@innovatex.edu")
-                if (defaultUser == null) {
+                // Ensure initial seed data is populated if database is fresh
+                val existingStudent = userDao.getUserByEmail("student@innovatex.edu")
+                if (existingStudent == null) {
                     InitialData.seedDatabase(database)
-                    defaultUser = userDao.getUserByEmail("student@innovatex.edu")
                 }
-                _currentUser.value = defaultUser
+                // Automatic login removed: student must explicitly enter login or signup credentials to log in.
+                _currentUser.value = null
 
                 // Activate realtime sync listener from Firebase Realtime Database
                 FirebaseManager.listenToAllProjectsRealtime { liveProjects ->
@@ -157,6 +157,8 @@ class InnovateXRepository(private val context: Context) {
             return@withContext Result.failure(Exception("Incorrect password. Please try again."))
         }
         _currentUser.value = user
+        val latestPayment = paymentDao.getLatestPaymentForUserDirect(user.id)
+        _isClassesUnlocked.value = user.isAdmin || (latestPayment?.status == com.example.data.model.PaymentStatus.APPROVED.statusKey)
         FirebaseManager.logLogin(user.id, user.role)
         Result.success(user)
     }
@@ -194,6 +196,7 @@ class InnovateXRepository(private val context: Context) {
         )
         userDao.insertUser(newUser)
         _currentUser.value = newUser
+        _isClassesUnlocked.value = false
         FirebaseManager.logSignUp(newUser.id, newUser.school, newUser.role)
         Result.success(newUser)
     }
@@ -202,6 +205,8 @@ class InnovateXRepository(private val context: Context) {
         val user = userDao.findUserDirect(userId)
         if (user != null) {
             _currentUser.value = user
+            val latestPayment = paymentDao.getLatestPaymentForUserDirect(user.id)
+            _isClassesUnlocked.value = user.isAdmin || (latestPayment?.status == com.example.data.model.PaymentStatus.APPROVED.statusKey)
             Result.success(user)
         } else {
             Result.failure(Exception("User not found"))
@@ -210,6 +215,7 @@ class InnovateXRepository(private val context: Context) {
 
     fun logout() {
         _currentUser.value = null
+        _isClassesUnlocked.value = false
     }
 
     suspend fun updateProfile(user: User): Result<Unit> = withContext(Dispatchers.IO) {
@@ -669,6 +675,75 @@ class InnovateXRepository(private val context: Context) {
         notificationDao.clearAllForUser(userId)
     }
 
+    // ---------------- REVIEWS & STAR RATINGS ----------------
+
+    fun getReviewsForProject(projectId: String): Flow<List<Review>> =
+        reviewDao.getReviewsForProject(projectId)
+
+    suspend fun submitStudentReview(
+        projectId: String,
+        rating: Int,
+        studentFeedback: String,
+        constructiveTip: String = ""
+    ): Result<Review> = withContext(Dispatchers.IO) {
+        val user = _currentUser.value
+        val reviewerId = user?.id ?: "student_peer"
+        val reviewerName = user?.name?.ifBlank { "Student Innovator" } ?: "Student Innovator"
+        val reviewerRole = when {
+            user?.isAdmin == true -> "Lead STEM Reviewer"
+            !user?.gradeClass.isNullOrBlank() -> "Peer (${user.gradeClass})"
+            else -> "Student Innovator"
+        }
+
+        if (studentFeedback.isBlank()) {
+            return@withContext Result.failure(Exception("Please provide constructive feedback or comments for this prototype."))
+        }
+
+        val clampedRating = rating.coerceIn(1, 5)
+        val reviewId = "rev_peer_" + UUID.randomUUID().toString().take(8)
+        val review = Review(
+            id = reviewId,
+            projectId = projectId,
+            reviewerId = reviewerId,
+            reviewerName = reviewerName,
+            action = "PEER_REVIEW",
+            studentFeedback = studentFeedback.trim(),
+            privateNotes = "",
+            badgeAwarded = null,
+            rating = clampedRating,
+            reviewerRole = reviewerRole,
+            constructiveTip = constructiveTip.trim(),
+            timestamp = System.currentTimeMillis()
+        )
+
+        reviewDao.insertReview(review)
+
+        // Notify project owner
+        val project = projectDao.getProjectDirect(projectId)
+        if (project != null && project.ownerId != reviewerId) {
+            notificationDao.insertNotification(
+                NotificationItem(
+                    id = "notif_" + UUID.randomUUID().toString().take(8),
+                    userId = project.ownerId,
+                    projectId = project.id,
+                    projectTitle = project.title,
+                    type = NotificationType.PEER_REVIEW_RECEIVED.name,
+                    title = "New $clampedRating★ Review Received!",
+                    message = "$reviewerName rated your prototype '$clampedRating Stars': \"${studentFeedback.take(65)}\"",
+                    isRead = false,
+                    createdAt = System.currentTimeMillis()
+                )
+            )
+        }
+
+        Result.success(review)
+    }
+
+    suspend fun deleteReview(reviewId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        reviewDao.deleteReview(reviewId)
+        Result.success(Unit)
+    }
+
     // ---------------- LIVE CLASSES & PAYMENT LOCK ----------------
 
     fun getLatestPaymentForUser(userId: String): Flow<com.example.data.model.PaymentRequest?> =
@@ -747,6 +822,46 @@ class InnovateXRepository(private val context: Context) {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun deleteLiveClass(classId: String): Result<Boolean> = withContext(Dispatchers.IO) {
+        try {
+            liveClassDao.deleteClass(classId)
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun getPaymentConfig(): Flow<com.example.data.model.PaymentConfig?> =
+        paymentDao.getPaymentConfigFlow()
+
+    suspend fun updatePaymentConfig(
+        scannerImageUri: String?,
+        accountTitle: String? = null,
+        accountNumber: String? = null,
+        feeAmountPkr: Int? = null
+    ): Result<Boolean> = withContext(Dispatchers.IO) {
+        val current = paymentDao.getPaymentConfigDirect() ?: com.example.data.model.PaymentConfig()
+        val updated = current.copy(
+            scannerImageUri = scannerImageUri,
+            accountTitle = accountTitle ?: current.accountTitle,
+            accountNumber = accountNumber ?: current.accountNumber,
+            feeAmountPkr = feeAmountPkr ?: current.feeAmountPkr,
+            updatedTimestamp = System.currentTimeMillis()
+        )
+        paymentDao.savePaymentConfig(updated)
+        Result.success(true)
+    }
+
+    suspend fun resetPaymentScannerToDefault(): Result<Boolean> = withContext(Dispatchers.IO) {
+        val current = paymentDao.getPaymentConfigDirect() ?: com.example.data.model.PaymentConfig()
+        val updated = current.copy(
+            scannerImageUri = null,
+            updatedTimestamp = System.currentTimeMillis()
+        )
+        paymentDao.savePaymentConfig(updated)
+        Result.success(true)
     }
 }
 

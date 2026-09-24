@@ -10,9 +10,12 @@ data class Review(
     val projectId: String,
     val reviewerId: String,
     val reviewerName: String,
-    val action: String, // "APPROVED", "CHANGES_REQUESTED", "REJECTED", "PUBLISHED"
+    val action: String = "PEER_REVIEW", // "APPROVED", "CHANGES_REQUESTED", "REJECTED", "PUBLISHED", "PEER_REVIEW"
     val studentFeedback: String,
-    val privateNotes: String,
+    val privateNotes: String = "",
     val badgeAwarded: String? = null,
+    val rating: Int = 5, // 1 to 5 stars
+    val reviewerRole: String = "Student Innovator",
+    val constructiveTip: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

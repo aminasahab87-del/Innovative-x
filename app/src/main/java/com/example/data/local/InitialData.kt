@@ -14,6 +14,21 @@ import com.example.data.model.UserRole
 object InitialData {
     val sampleUsers = listOf(
         User(
+            id = "user_dev_aafaq",
+            email = "aafaq.hussain@innovatex.edu",
+            passwordHash = "aafaq123",
+            name = "Aafaq Hussain",
+            role = UserRole.ADMIN.roleKey,
+            school = "InnovateX Lead Engineering & Development",
+            gradeClass = "Chief Software Architect & Lead Developer",
+            city = "Silicon Valley",
+            state = "California",
+            bio = "Lead Developer & System Architect of InnovateX STEM Platform. Empowering student scientists and young engineers worldwide.",
+            avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400&auto=format&fit=crop&q=80",
+            isPublicInfoVisible = true,
+            createdAt = System.currentTimeMillis() - 86400000L * 90
+        ),
+        User(
             id = "user_student_1",
             email = "student@innovatex.edu",
             passwordHash = "password123",
@@ -381,7 +396,52 @@ object InitialData {
             studentFeedback = "Exceptional engineering rigour! The closed-loop irrigation system and power budget were verified successfully with healthy kale and lettuce yields over 4 weeks.",
             privateNotes = "Top candidate for the State Science Fair grant. Solar power calculations are sound.",
             badgeAwarded = InnovationBadge.GREEN_INNOVATION.title,
+            rating = 5,
+            reviewerRole = "Chief Science Reviewer",
+            constructiveTip = "Consider adding automated SMS alerts via SIM800L module when pH drifts out of tolerance for remote monitoring.",
             timestamp = System.currentTimeMillis() - 86400000L * 5
+        ),
+        Review(
+            id = "rev_peer_1",
+            projectId = "proj_arduino_obstacle_robot",
+            reviewerId = "user_student_2",
+            reviewerName = "Maya Chen",
+            action = "PEER_REVIEW",
+            studentFeedback = "Loved your rover prototype! The ultrasonic servo scanning algorithm is super smooth and avoids tight corner traps really effectively. Tested code on my own 2WD chassis.",
+            privateNotes = "",
+            badgeAwarded = null,
+            rating = 5,
+            reviewerRole = "Student Innovator",
+            constructiveTip = "You could add small rubber silicone bands to the plastic TT gear wheels for better traction on polished laboratory tiles.",
+            timestamp = System.currentTimeMillis() - 86400000L * 2
+        ),
+        Review(
+            id = "rev_peer_2",
+            projectId = "proj_arduino_obstacle_robot",
+            reviewerId = "user_student_3",
+            reviewerName = "Zain Malik",
+            action = "PEER_REVIEW",
+            studentFeedback = "Very clean breadboard wiring and great use of dual power supply isolation. Solved the common microcontroller brownout reset problem nicely!",
+            privateNotes = "",
+            badgeAwarded = null,
+            rating = 4,
+            reviewerRole = "Robotics Club Member",
+            constructiveTip = "A small buzzer beep right before turning would make it safer in crowded school hallway demonstrations.",
+            timestamp = System.currentTimeMillis() - 86400000L * 1
+        ),
+        Review(
+            id = "rev_peer_3",
+            projectId = "proj_hydroponics",
+            reviewerId = "user_student_2",
+            reviewerName = "Maya Chen",
+            action = "PEER_REVIEW",
+            studentFeedback = "Incredible zero-grid agriculture build! The 3D printed pods distribute water evenly without clogging or root rot.",
+            privateNotes = "",
+            badgeAwarded = null,
+            rating = 5,
+            reviewerRole = "Biotech Student",
+            constructiveTip = "Using dark-tinted PETG instead of standard white PLA will prevent algae accumulation inside the nutrient lines.",
+            timestamp = System.currentTimeMillis() - 86400000L * 3
         ),
         Review(
             id = "rev_2",
@@ -392,6 +452,9 @@ object InitialData {
             studentFeedback = "Brilliant concept! However, please provide circuit schematics for the capacitor rectifier bridge and battery efficiency graphs during continuous 100-step test cycles before final publishing approval.",
             privateNotes = "The student has great intuition. Needs more data on power dissipation.",
             badgeAwarded = null,
+            rating = 4,
+            reviewerRole = "Chief Science Reviewer",
+            constructiveTip = "Include Schottky diodes in the rectifier bridge to minimize forward voltage drop across piezoelectric pulses.",
             timestamp = System.currentTimeMillis() - 86400000L * 3
         )
     )
@@ -409,35 +472,38 @@ object InitialData {
             description = "Learn real-world sensor integration, servo motor control, and autonomous robot navigation using Arduino Uno and ESP32 microcontrollers.",
             priceText = "250 PKR / 10 Days Access",
             isLiveNow = true,
-            durationMinutes = 60
+            durationMinutes = 60,
+            scheduledTimestamp = System.currentTimeMillis() - 15 * 60 * 1000L
         ),
         LiveClassSession(
             id = "class_2",
             title = "AI & Vision Models for Science Fairs",
             instructorName = "Dr. Elena Vance",
             subject = "Artificial Intelligence",
-            dateTimeText = "Tomorrow, 6:00 PM - Zoom Live",
+            dateTimeText = "Today in 45 mins - Zoom Live",
             zoomMeetingId = "915 3301 8842",
             zoomPassword = "sciencepass",
             zoomLink = "https://zoom.us/j/91533018842?pwd=sciencepass",
             description = "Step-by-step interactive session to train custom TensorFlow Lite computer vision models on Raspberry Pi for smart science prototypes.",
             priceText = "250 PKR / 10 Days Access",
             isLiveNow = false,
-            durationMinutes = 90
+            durationMinutes = 90,
+            scheduledTimestamp = System.currentTimeMillis() + 45 * 60 * 1000L
         ),
         LiveClassSession(
             id = "class_3",
             title = "3D CAD Prototyping Workshop",
             instructorName = "Engr. Maya Chen",
             subject = "CAD & 3D Printing",
-            dateTimeText = "Friday, 4:00 PM - Zoom Session",
+            dateTimeText = "Tomorrow, 4:00 PM - Zoom Session",
             zoomMeetingId = "732 1198 4409",
             zoomPassword = "cad2026",
             zoomLink = "https://zoom.us/j/73211984409?pwd=cad2026",
             description = "Design custom enclosures, mechanical gears, and 3D printable prototype chassis using Fusion 360 and Tinkercad.",
             priceText = "250 PKR / 10 Days Access",
             isLiveNow = false,
-            durationMinutes = 75
+            durationMinutes = 75,
+            scheduledTimestamp = System.currentTimeMillis() + 26 * 60 * 60 * 1000L
         )
     )
 

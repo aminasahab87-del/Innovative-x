@@ -1,6 +1,11 @@
 package com.example.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.AssignmentTurnedIn
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -29,14 +35,25 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.ChangeCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RateReview
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -58,12 +75,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.painterResource
+import com.example.R
+import com.example.data.model.LiveClassSession
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -447,6 +469,16 @@ fun AdminPanelScreen(
                         }
                     }
                 }
+            }
+
+            // 📸 Admin Payment Scanner Management (Set from Gallery / URL for Student Panel)
+            item {
+                AdminPaymentScannerConfigCard(viewModel = viewModel)
+            }
+
+            // 📅 Zoom Live Classes Scheduling & Real-time Countdown Timer Management
+            item {
+                AdminLiveClassScheduleCard(viewModel = viewModel)
             }
 
             // Filter Tabs
@@ -980,5 +1012,1116 @@ fun AdminReviewDialog(
             }
         },
         dismissButton = {}
+    )
+}
+
+@Composable
+fun AdminPaymentScannerConfigCard(viewModel: InnovateXViewModel) {
+    val paymentConfig by viewModel.paymentConfig.collectAsStateWithLifecycle()
+    var showUrlDialog by remember { mutableStateOf(false) }
+    var inputUrl by remember { mutableStateOf("") }
+    var showEditDetailsDialog by remember { mutableStateOf(false) }
+
+    var editTitle by remember(paymentConfig) { mutableStateOf(paymentConfig.accountTitle) }
+    var editNumber by remember(paymentConfig) { mutableStateOf(paymentConfig.accountNumber) }
+    var editFee by remember(paymentConfig) { mutableStateOf(paymentConfig.feeAmountPkr.toString()) }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.updatePaymentScanner(uri.toString())
+        }
+    }
+
+    if (showUrlDialog) {
+        AlertDialog(
+            onDismissRequest = { showUrlDialog = false },
+            title = { Text("Set Payment QR by Image Link", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Paste a direct image URL for the Payment Scanner QR Code:", style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = inputUrl,
+                        onValueChange = { inputUrl = it },
+                        label = { Text("Image URL (https://...)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (inputUrl.isNotBlank()) {
+                            viewModel.updatePaymentScanner(inputUrl.trim())
+                            showUrlDialog = false
+                            inputUrl = ""
+                        }
+                    }
+                ) {
+                    Text("Save Scanner")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showUrlDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    if (showEditDetailsDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDetailsDialog = false },
+            title = { Text("Edit Payment Account Details", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    OutlinedTextField(
+                        value = editTitle,
+                        onValueChange = { editTitle = it },
+                        label = { Text("Account Title / Name") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = editNumber,
+                        onValueChange = { editNumber = it },
+                        label = { Text("Account / Mobile Number") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = editFee,
+                        onValueChange = { editFee = it },
+                        label = { Text("Fee Amount (PKR)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val feeInt = editFee.toIntOrNull() ?: paymentConfig.feeAmountPkr
+                        viewModel.updatePaymentDetails(
+                            accountTitle = editTitle.trim(),
+                            accountNumber = editNumber.trim(),
+                            feeAmount = feeInt
+                        )
+                        showEditDetailsDialog = false
+                    }
+                ) {
+                    Text("Save Details")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDetailsDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.QrCodeScanner,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Student Payment Scanner",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Surface(
+                    color = if (!paymentConfig.scannerImageUri.isNullOrBlank()) Color(0xFF10B981).copy(alpha = 0.2f) else MaterialTheme.colorScheme.secondaryContainer,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = if (!paymentConfig.scannerImageUri.isNullOrBlank()) "Custom QR Active" else "Default QR Active",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (!paymentConfig.scannerImageUri.isNullOrBlank()) Color(0xFF10B981) else MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Text(
+                text = "Set the QR code scanner that all students see in the Zoom Live Classes payment section.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            // Scanner Image Preview
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!paymentConfig.scannerImageUri.isNullOrBlank()) {
+                    AsyncImage(
+                        model = paymentConfig.scannerImageUri,
+                        contentDescription = "Active Payment Scanner",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(170.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                    )
+                } else {
+                    Image(
+                        painter = painterResource(id = R.drawable.user_payment_qr_scanner),
+                        contentDescription = "Default Payment Scanner",
+                        modifier = Modifier
+                            .size(170.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(2.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                    )
+                }
+            }
+
+            // Current Account Info
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            text = "${paymentConfig.accountNumber} (${paymentConfig.accountTitle})",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Fee: ${paymentConfig.feeAmountPkr} PKR • ${paymentConfig.paymentMethod}",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    TextButton(onClick = { showEditDetailsDialog = true }) {
+                        Text("Edit", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+
+            // Action Buttons to change Scanner
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth().height(42.dp),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PhotoLibrary,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📸 Pick New Scanner from Gallery", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { showUrlDialog = true },
+                        modifier = Modifier.weight(1f).height(38.dp),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Link, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Set URL", fontSize = 12.sp)
+                    }
+
+                    if (!paymentConfig.scannerImageUri.isNullOrBlank()) {
+                        OutlinedButton(
+                            onClick = { viewModel.resetPaymentScannerToDefault() },
+                            modifier = Modifier.weight(1f).height(38.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Icon(imageVector = Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Reset Default", fontSize = 12.sp)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AdminLiveClassScheduleCard(
+    viewModel: InnovateXViewModel,
+    modifier: Modifier = Modifier
+) {
+    val liveClasses by viewModel.allLiveClasses.collectAsStateWithLifecycle()
+    var showScheduleDialog by remember { mutableStateOf(false) }
+    var sessionToEdit by remember { mutableStateOf<LiveClassSession?>(null) }
+    var currentTime by remember { mutableLongStateOf(System.currentTimeMillis()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            currentTime = System.currentTimeMillis()
+            delay(1000)
+        }
+    }
+
+    if (showScheduleDialog) {
+        ScheduleLiveClassDialog(
+            onDismiss = { showScheduleDialog = false },
+            onConfirm = { title, instructor, subject, dateTimeText, meetingId, password, link, desc, duration, delayMillis, goLiveNow ->
+                val scheduledTimestamp = if (goLiveNow) System.currentTimeMillis() - 1000L else System.currentTimeMillis() + delayMillis
+                viewModel.createLiveClass(
+                    title = title,
+                    instructorName = instructor,
+                    subject = subject,
+                    dateTimeText = dateTimeText,
+                    zoomMeetingId = meetingId,
+                    zoomPassword = password,
+                    zoomLink = link,
+                    description = desc,
+                    scheduledTimestamp = scheduledTimestamp,
+                    durationMinutes = duration,
+                    isLiveNow = goLiveNow
+                ) { success, _ ->
+                    if (success) {
+                        showScheduleDialog = false
+                    }
+                }
+            }
+        )
+    }
+
+    val currentEditingSession = sessionToEdit
+    if (currentEditingSession != null) {
+        EditZoomCredentialsDialog(
+            session = currentEditingSession,
+            onDismiss = { sessionToEdit = null },
+            onConfirm = { updatedSession ->
+                viewModel.updateLiveClass(updatedSession) { success, _ ->
+                    if (success) {
+                        sessionToEdit = null
+                    }
+                }
+            }
+        )
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2D8CFF).copy(alpha = 0.15f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Videocam,
+                            contentDescription = null,
+                            tint = Color(0xFF2D8CFF),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "Zoom Classes Schedule",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${liveClasses.size} scheduled sessions with live countdown",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = { showScheduleDialog = true },
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D8CFF)),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Schedule", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            if (liveClasses.isEmpty()) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "No Live Classes Scheduled",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Tap 'Schedule' above to add a Zoom class and start its countdown timer.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+            } else {
+                liveClasses.forEach { session ->
+                    val remainingMillis = session.scheduledTimestamp - currentTime
+                    val isLiveNow = session.isLiveNow || (session.scheduledTimestamp > 0 && remainingMillis <= 0 && currentTime <= session.scheduledTimestamp + session.durationMinutes * 60 * 1000L)
+                    val isEnded = session.scheduledTimestamp > 0 && (currentTime > session.scheduledTimestamp + session.durationMinutes * 60 * 1000L)
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    color = if (isLiveNow) Color(0xFFEF4444).copy(alpha = 0.15f) else MaterialTheme.colorScheme.primaryContainer,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = if (isLiveNow) "🔴 LIVE NOW" else session.subject,
+                                        color = if (isLiveNow) Color(0xFFDC2626) else MaterialTheme.colorScheme.onPrimaryContainer,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    IconButton(
+                                        onClick = { sessionToEdit = session },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = "Edit Zoom ID & Password",
+                                            tint = Color(0xFF2D8CFF),
+                                            modifier = Modifier.size(17.dp)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.toggleLiveClassStatus(session) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (session.isLiveNow) Icons.Default.Close else Icons.Default.PlayArrow,
+                                            contentDescription = if (session.isLiveNow) "End Live" else "Go Live",
+                                            tint = if (session.isLiveNow) Color(0xFFEF4444) else Color(0xFF10B981),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                    IconButton(
+                                        onClick = { viewModel.deleteLiveClass(session.id) },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = MaterialTheme.colorScheme.error,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+                            }
+
+                            Text(
+                                text = session.title,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleSmall
+                            )
+
+                            Text(
+                                text = "Instructor: ${session.instructorName} • ${session.durationMinutes} Mins",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            // Countdown Timer Box
+                            Surface(
+                                color = when {
+                                    isLiveNow -> Color(0xFFEF4444).copy(alpha = 0.1f)
+                                    remainingMillis > 0 -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
+                                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                                },
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Timer,
+                                        contentDescription = null,
+                                        tint = if (isLiveNow) Color(0xFFDC2626) else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    if (isLiveNow) {
+                                        Text(
+                                            text = "Class is currently LIVE! Students can join.",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = Color(0xFFDC2626)
+                                        )
+                                    } else if (remainingMillis > 0) {
+                                        val totalSec = remainingMillis / 1000
+                                        val hrs = totalSec / 3600
+                                        val mins = (totalSec % 3600) / 60
+                                        val secs = totalSec % 60
+                                        Text(
+                                            text = "⏳ Starts in: ${String.format("%02d:%02d:%02d", hrs, mins, secs)} (Timer Running)",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    } else if (isEnded) {
+                                        Text(
+                                            text = "Session Ended • Recording Link Available",
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    } else {
+                                        Text(
+                                            text = session.dateTimeText,
+                                            fontSize = 11.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Zoom Credentials preview with direct Admin Edit tap
+                            Surface(
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { sessionToEdit = session }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Key,
+                                            contentDescription = null,
+                                            tint = Color(0xFF2D8CFF),
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Text(
+                                            text = "Zoom ID: ${session.zoomMeetingId}  |  Pass: ${session.zoomPassword}",
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    Text(
+                                        text = "Edit ✏️",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF2D8CFF)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun EditZoomCredentialsDialog(
+    session: LiveClassSession,
+    onDismiss: () -> Unit,
+    onConfirm: (LiveClassSession) -> Unit
+) {
+    var title by remember { mutableStateOf(session.title) }
+    var instructor by remember { mutableStateOf(session.instructorName) }
+    var subject by remember { mutableStateOf(session.subject) }
+    var meetingId by remember { mutableStateOf(session.zoomMeetingId) }
+    var password by remember { mutableStateOf(session.zoomPassword) }
+    var link by remember { mutableStateOf(session.zoomLink) }
+    var description by remember { mutableStateOf(session.description) }
+    var durationMinutesText by remember { mutableStateOf(session.durationMinutes.toString()) }
+    var dateTimeText by remember { mutableStateOf(session.dateTimeText) }
+    var isLiveNow by remember { mutableStateOf(session.isLiveNow) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null,
+                    tint = Color(0xFF2D8CFF),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Edit Zoom ID & Password", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                item {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Admin Panel Only: Yahan se aap Zoom ID, Password aur class details edit kar sakte hain. Changes save hote hi approved students ko update mil jayega.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(10.dp)
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Class Topic / Title *") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = meetingId,
+                            onValueChange = { meetingId = it },
+                            label = { Text("Zoom Meeting ID *") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password *") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = link,
+                        onValueChange = { link = it },
+                        label = { Text("Direct Zoom Link *") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = instructor,
+                            onValueChange = { instructor = it },
+                            label = { Text("Instructor") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = subject,
+                            onValueChange = { subject = it },
+                            label = { Text("Subject") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = durationMinutesText,
+                            onValueChange = { durationMinutesText = it.filter { c -> c.isDigit() } },
+                            label = { Text("Duration (Mins)") },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = dateTimeText,
+                            onValueChange = { dateTimeText = it },
+                            label = { Text("Schedule Text") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Live Now Status", fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                        Switch(
+                            checked = isLiveNow,
+                            onCheckedChange = { isLiveNow = it }
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Class Description / Instructions") },
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (errorMessage != null) {
+                    item {
+                        Text(
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isBlank()) {
+                        errorMessage = "Please enter class title."
+                        return@Button
+                    }
+                    if (meetingId.isBlank() || password.isBlank()) {
+                        errorMessage = "Meeting ID and Password cannot be empty."
+                        return@Button
+                    }
+                    val updated = session.copy(
+                        title = title.trim(),
+                        instructorName = instructor.trim(),
+                        subject = subject.trim(),
+                        zoomMeetingId = meetingId.trim(),
+                        zoomPassword = password.trim(),
+                        zoomLink = link.trim(),
+                        durationMinutes = durationMinutesText.toIntOrNull() ?: session.durationMinutes,
+                        dateTimeText = dateTimeText.trim(),
+                        description = description.trim(),
+                        isLiveNow = isLiveNow
+                    )
+                    onConfirm(updated)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D8CFF))
+            ) {
+                Text("Save Credentials")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun ScheduleLiveClassDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (
+        title: String,
+        instructor: String,
+        subject: String,
+        dateTimeText: String,
+        meetingId: String,
+        password: String,
+        link: String,
+        description: String,
+        durationMinutes: Int,
+        delayMillis: Long,
+        goLiveNow: Boolean
+    ) -> Unit
+) {
+    var title by remember { mutableStateOf("") }
+    var instructor by remember { mutableStateOf("Prof. Tariq Mahmood") }
+    var subject by remember { mutableStateOf("Robotics & IoT") }
+    var meetingId by remember { mutableStateOf("842 9102 5521") }
+    var password by remember { mutableStateOf("innovate2026") }
+    var link by remember { mutableStateOf("https://zoom.us/j/84291025521?pwd=innovate2026") }
+    var description by remember { mutableStateOf("Comprehensive live hands-on tutorial with Q&A session.") }
+    var durationMinutesText by remember { mutableStateOf("60") }
+    var selectedPresetMinutes by remember { mutableStateOf(30L) }
+    var goLiveNow by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val presetOptions = listOf(
+        Pair("15 Min", 15L),
+        Pair("30 Min", 30L),
+        Pair("1 Hour", 60L),
+        Pair("3 Hours", 180L),
+        Pair("Tomorrow (24h)", 1440L)
+    )
+
+    val targetTimeFormatted = remember(selectedPresetMinutes, goLiveNow) {
+        if (goLiveNow) {
+            "Immediately (Class will start right now)"
+        } else {
+            val targetCal = java.util.Calendar.getInstance().apply {
+                add(java.util.Calendar.MINUTE, selectedPresetMinutes.toInt())
+            }
+            val sdf = java.text.SimpleDateFormat("dd MMM, hh:mm a", java.util.Locale.getDefault())
+            sdf.format(targetCal.time) + " (Starts in $selectedPresetMinutes mins)"
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = Color(0xFF2D8CFF),
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Schedule Zoom Live Class", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                item {
+                    Text(
+                        text = "Students panel ma scheduled time ka countdown timer automatically start ho jayega.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("Class Topic / Title *") },
+                        placeholder = { Text("e.g. Arduino Robotics Masterclass") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = instructor,
+                            onValueChange = { instructor = it },
+                            label = { Text("Instructor *") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = subject,
+                            onValueChange = { subject = it },
+                            label = { Text("Subject / Track") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                // Schedule Timer / Countdown Selector
+                item {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "⏱️ Set Start Time & Timer Duration:",
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text("Go Live Immediately", fontSize = 12.sp)
+                                Switch(
+                                    checked = goLiveNow,
+                                    onCheckedChange = { goLiveNow = it }
+                                )
+                            }
+
+                            if (!goLiveNow) {
+                                Text("Timer Countdown Preset:", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    items(presetOptions) { (label, minutes) ->
+                                        val isSelected = selectedPresetMinutes == minutes
+                                        Surface(
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                                            shape = RoundedCornerShape(8.dp),
+                                            border = androidx.compose.foundation.BorderStroke(
+                                                1.dp,
+                                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant
+                                            ),
+                                            modifier = Modifier.clickable { selectedPresetMinutes = minutes }
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Surface(
+                                    color = MaterialTheme.colorScheme.surface,
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Timer,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Text(
+                                            text = "Timer Starts For: $targetTimeFormatted",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = meetingId,
+                            onValueChange = { meetingId = it },
+                            label = { Text("Zoom Meeting ID *") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            label = { Text("Password *") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = link,
+                        onValueChange = { link = it },
+                        label = { Text("Direct Zoom Link *") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = durationMinutesText,
+                        onValueChange = { durationMinutesText = it.filter { char -> char.isDigit() } },
+                        label = { Text("Duration (Minutes)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = description,
+                        onValueChange = { description = it },
+                        label = { Text("Class Description / Syllabus") },
+                        maxLines = 3,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (errorMessage != null) {
+                    item {
+                        Text(
+                            text = errorMessage!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    if (title.isBlank()) {
+                        errorMessage = "Please enter class topic/title."
+                        return@Button
+                    }
+                    if (meetingId.isBlank() || password.isBlank()) {
+                        errorMessage = "Please enter Zoom Meeting ID & Password."
+                        return@Button
+                    }
+                    val delayMillis = if (goLiveNow) 0L else selectedPresetMinutes * 60 * 1000L
+                    val duration = durationMinutesText.toIntOrNull() ?: 60
+                    val dateTimeText = if (goLiveNow) {
+                        "Live Now"
+                    } else {
+                        "Starts in $selectedPresetMinutes mins"
+                    }
+
+                    onConfirm(
+                        title.trim(),
+                        instructor.trim(),
+                        subject.trim(),
+                        dateTimeText,
+                        meetingId.trim(),
+                        password.trim(),
+                        link.trim(),
+                        description.trim(),
+                        duration,
+                        delayMillis,
+                        goLiveNow
+                    )
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D8CFF))
+            ) {
+                Text("Start Timer & Schedule", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
     )
 }

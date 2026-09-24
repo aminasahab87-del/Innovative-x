@@ -12,6 +12,7 @@ enum class NotificationType(val title: String, val iconName: String, val colorHe
     BADGE_RECEIVED("New Badge Awarded", "workspace_premium", 0xFFF59E0B),
     PROJECT_FEATURED("Project Featured", "auto_awesome", 0xFF8B5CF6),
     AI_REVIEW_COMPLETED("AI Review Completed", "smart_toy", 0xFF8B5CF6),
+    PEER_REVIEW_RECEIVED("New Peer Review", "rate_review", 0xFFF59E0B),
     SYSTEM("System Notice", "info", 0xFF0284C7);
 
     companion object {

@@ -168,48 +168,6 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Quick Demo Accounts Fill
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-                    )
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "⚡ Instant Demo Sign-In:",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Button(
-                                onClick = {
-                                    email = "student@innovatex.edu"
-                                    password = "password123"
-                                    viewModel.login(email, password) { success, _ ->
-                                        if (success) onAuthSuccess()
-                                    }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .testTag("quick_student_login_btn"),
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 8.dp)
-                            ) {
-                                Icon(imageVector = Icons.Default.School, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("Student Demo Sign-In", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
                 // Tabs: Login / Sign Up
                 TabRow(
                     selectedTabIndex = selectedTab,

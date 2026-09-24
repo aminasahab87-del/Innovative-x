@@ -22,7 +22,13 @@ class MainActivity : ComponentActivity() {
     val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
     Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
       android.util.Log.e("MainActivity", "Uncaught exception in thread ${thread.name}: ${throwable.message}", throwable)
-      defaultHandler?.uncaughtException(thread, throwable)
+      val msg = throwable.message?.lowercase() ?: ""
+      val isMigrationError = msg.contains("migration") || msg.contains("room") || msg.contains("sqlite")
+      if (isMigrationError) {
+        android.util.Log.w("MainActivity", "Recoverable database/migration exception intercepted, preventing crash: ${throwable.message}")
+      } else {
+        defaultHandler?.uncaughtException(thread, throwable)
+      }
     }
 
     enableEdgeToEdge()

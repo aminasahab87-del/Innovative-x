@@ -10,6 +10,7 @@ import com.example.data.model.InnovationCategory
 import com.example.data.model.NotificationItem
 import com.example.data.model.Project
 import com.example.data.model.ProjectStatus
+import com.example.data.model.Review
 import com.example.data.model.User
 import com.example.data.repository.AdminStats
 import com.example.data.repository.InnovateXRepository
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -169,6 +171,11 @@ class InnovateXViewModel(application: Application) : AndroidViewModel(applicatio
         if (id != null) repository.getProjectById(id) else flowOf(null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
+    // Reviews and star ratings for the currently selected project
+    val selectedProjectReviews: StateFlow<List<Review>> = _selectedProjectId.flatMapLatest { id ->
+        if (id != null) repository.getReviewsForProject(id) else flowOf(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Submission form wizard state
     private val _submissionForm = MutableStateFlow(SubmissionFormState())
     val submissionForm: StateFlow<SubmissionFormState> = _submissionForm.asStateFlow()
@@ -195,6 +202,32 @@ class InnovateXViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.likeProject(projectId)
             _userMessage.emit("Applauded innovation!")
+        }
+    }
+
+    fun submitStudentReview(
+        projectId: String,
+        rating: Int,
+        feedback: String,
+        constructiveTip: String = "",
+        onComplete: (Boolean, String?) -> Unit = { _, _ -> }
+    ) {
+        viewModelScope.launch {
+            val result = repository.submitStudentReview(projectId, rating, feedback, constructiveTip)
+            result.onSuccess {
+                _userMessage.emit("Review & $rating★ rating submitted successfully!")
+                onComplete(true, null)
+            }.onFailure { err ->
+                _userMessage.emit(err.message ?: "Failed to submit review")
+                onComplete(false, err.message)
+            }
+        }
+    }
+
+    fun deleteReview(reviewId: String) {
+        viewModelScope.launch {
+            repository.deleteReview(reviewId)
+            _userMessage.emit("Review removed")
         }
     }
 
@@ -580,6 +613,44 @@ class InnovateXViewModel(application: Application) : AndroidViewModel(applicatio
     val allPaymentRequests: StateFlow<List<com.example.data.model.PaymentRequest>> = repository.getAllPaymentRequests()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val paymentConfig: StateFlow<com.example.data.model.PaymentConfig> = repository.getPaymentConfig()
+        .map { it ?: com.example.data.model.PaymentConfig() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), com.example.data.model.PaymentConfig())
+
+    fun updatePaymentScanner(imageUri: String?, onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.updatePaymentConfig(scannerImageUri = imageUri)
+            _userMessage.emit("Payment Scanner updated! Students will now see this QR in Classes.")
+            onComplete()
+        }
+    }
+
+    fun resetPaymentScannerToDefault(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            repository.resetPaymentScannerToDefault()
+            _userMessage.emit("Payment Scanner reset to default.")
+            onComplete()
+        }
+    }
+
+    fun updatePaymentDetails(
+        accountTitle: String,
+        accountNumber: String,
+        feeAmount: Int,
+        onComplete: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            repository.updatePaymentConfig(
+                scannerImageUri = null,
+                accountTitle = accountTitle,
+                accountNumber = accountNumber,
+                feeAmountPkr = feeAmount
+            )
+            _userMessage.emit("Payment details updated.")
+            onComplete()
+        }
+    }
+
     fun submitPaymentRequest(txnId: String, onResult: (Boolean, String?) -> Unit) {
         viewModelScope.launch {
             val res = repository.submitPaymentRequest(txnId)
@@ -620,6 +691,9 @@ class InnovateXViewModel(application: Application) : AndroidViewModel(applicatio
         zoomPassword: String,
         zoomLink: String,
         description: String,
+        scheduledTimestamp: Long = 0L,
+        durationMinutes: Int = 60,
+        isLiveNow: Boolean = false,
         onResult: (Boolean, String?) -> Unit
     ) {
         viewModelScope.launch {
@@ -633,14 +707,48 @@ class InnovateXViewModel(application: Application) : AndroidViewModel(applicatio
                 zoomPassword = zoomPassword,
                 zoomLink = zoomLink,
                 description = description,
-                isLiveNow = true
+                isLiveNow = isLiveNow,
+                durationMinutes = durationMinutes,
+                scheduledTimestamp = scheduledTimestamp
             )
             val res = repository.createLiveClass(newClass)
             res.onSuccess {
-                _userMessage.emit("Zoom Live Class Created & Published!")
+                _userMessage.emit("Live Class scheduled successfully! Countdown timer is active.")
                 onResult(true, null)
             }.onFailure {
-                onResult(false, it.message ?: "Failed to create class.")
+                onResult(false, it.message ?: "Failed to schedule class.")
+            }
+        }
+    }
+
+    fun deleteLiveClass(classId: String) {
+        viewModelScope.launch {
+            val res = repository.deleteLiveClass(classId)
+            res.onSuccess {
+                _userMessage.emit("Class session removed.")
+            }
+        }
+    }
+
+    fun toggleLiveClassStatus(session: com.example.data.model.LiveClassSession) {
+        viewModelScope.launch {
+            val updated = session.copy(isLiveNow = !session.isLiveNow)
+            repository.createLiveClass(updated)
+            _userMessage.emit(if (updated.isLiveNow) "Class is now LIVE!" else "Class marked as offline/scheduled.")
+        }
+    }
+
+    fun updateLiveClass(
+        session: com.example.data.model.LiveClassSession,
+        onResult: (Boolean, String?) -> Unit = { _, _ -> }
+    ) {
+        viewModelScope.launch {
+            val res = repository.createLiveClass(session)
+            res.onSuccess {
+                _userMessage.emit("Zoom credentials for '${session.title}' updated successfully!")
+                onResult(true, null)
+            }.onFailure {
+                onResult(false, it.message ?: "Failed to update Zoom credentials.")
             }
         }
     }

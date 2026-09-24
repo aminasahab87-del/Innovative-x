@@ -5,11 +5,21 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.example.data.model.PaymentConfig
 import com.example.data.model.PaymentRequest
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PaymentDao {
+    @Query("SELECT * FROM payment_config WHERE id = 'default_payment_config' LIMIT 1")
+    fun getPaymentConfigFlow(): Flow<PaymentConfig?>
+
+    @Query("SELECT * FROM payment_config WHERE id = 'default_payment_config' LIMIT 1")
+    suspend fun getPaymentConfigDirect(): PaymentConfig?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun savePaymentConfig(config: PaymentConfig)
+
     @Query("SELECT * FROM payment_requests WHERE userId = :userId ORDER BY timestamp DESC LIMIT 1")
     fun getLatestPaymentForUserFlow(userId: String): Flow<PaymentRequest?>
 

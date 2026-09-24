@@ -18,5 +18,6 @@ data class LiveClassSession(
     val priceText: String = "250 PKR / 10 Days",
     val isLiveNow: Boolean = false,
     val durationMinutes: Int = 60,
+    val scheduledTimestamp: Long = 0L,
     val createdAt: Long = System.currentTimeMillis()
 )
