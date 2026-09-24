@@ -1,0 +1,87 @@
+name: Build Android APK & Publish Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Prepare APK Output
+        run: |
+          mkdir -p output
+          if [ -f app/build/outputs/apk/debug/app-debug.apk ]; then
+            cp app/build/outputs/apk/debug/app-debug.apk output/InnovateX-App-debug.apk
+            echo "APK successfully prepared at output/InnovateX-App-debug.apk"
+          else
+            echo "Searching for APK files..."
+            find app/build/outputs/apk -name "*.apk" -exec cp {} output/InnovateX-App-debug.apk \;
+          fi
+
+      - name: Upload APK Artifact (Download from Actions Summary)
+        uses: actions/upload-artifact@v4
+        with:
+          name: InnovateX-Android-APK
+          path: output/*.apk
+          retention-days: 30
+
+      - name: Create GitHub Release & Publish APK
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0-release' }}
+          name: InnovateX Release ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v1.0.0' }}
+          body: |
+            ## 🚀 InnovateX Android App
+            
+            Download the pre-built Android APK file below to install directly on your Android phone or emulator!
+            
+            ### Included Features:
+            - **Submit & Explore Innovations**: Discover student science projects, prototypes, and inventions.
+            - **Gallery Photo & Video Upload**: Pick images and videos straight from your phone's gallery.
+            - **Star Rating & Reviews**: Review and rate published projects with detailed feedback.
+            - **Admin & Reviewer Portal**: Full approval & moderation workflow with passcode security.
+            - **Official InnovateX Branding**: High-resolution logo and custom adaptive launcher icon.
+            
+            ### 📱 How to Install on Android:
+            1. Click on `InnovateX-App-debug.apk` in the **Assets** section below to download.
+            2. Open the downloaded file on your Android phone.
+            3. If prompted, enable **"Allow from this source"** in settings to allow installation.
+            4. Tap **Install** and open InnovateX!
+          files: output/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

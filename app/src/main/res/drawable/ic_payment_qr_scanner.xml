@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="260dp"
+    android:height="260dp"
+    android:viewportWidth="260"
+    android:viewportHeight="260">
+
+    <!-- Background Card Frame -->
+    <path
+        android:pathData="M10,10 H250 A12,12 0 0 1 262,22 V250 A12,12 0 0 1 250,262 H10 A12,12 0 0 1 -2,250 V22 A12,12 0 0 1 10,10 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="270"
+                android:endColor="#F8FAFC"
+                android:startColor="#FFFFFF"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Outer Border Line -->
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M10,10 H250 V250 H10 Z" />
+
+    <!-- Top Payment Header Badge -->
+    <path
+        android:pathData="M20,20 H240 V50 H20 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="90"
+                android:endColor="#0284C7"
+                android:startColor="#0F172A"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- QR Code Outer Scanner Corners -->
+    <!-- Top-Left Corner -->
+    <path
+        android:strokeColor="#0284C7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M55,85 H75 M55,85 V105" />
+    <!-- Top-Right Corner -->
+    <path
+        android:strokeColor="#0284C7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M205,85 H185 M205,85 V105" />
+    <!-- Bottom-Left Corner -->
+    <path
+        android:strokeColor="#0284C7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M55,205 H75 M55,205 V185" />
+    <!-- Bottom-Right Corner -->
+    <path
+        android:strokeColor="#0284C7"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M205,205 H185 M205,205 V185" />
+
+    <!-- QR Code Finder Pattern 1 (Top-Left) -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M65,95 H105 V135 H65 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,102 H98 V128 H72 Z" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M78,108 H92 V122 H78 Z" />
+
+    <!-- QR Code Finder Pattern 2 (Top-Right) -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M155,95 H195 V135 H155 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M162,102 H188 V128 H162 Z" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M168,108 H182 V122 H168 Z" />
+
+    <!-- QR Code Finder Pattern 3 (Bottom-Left) -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M65,155 H105 V195 H65 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,162 H98 V188 H72 Z" />
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M78,168 H92 V182 H78 Z" />
+
+    <!-- QR Code Matrix Modules / Data Pixels -->
+    <!-- Column 1 -->
+    <path android:fillColor="#0F172A" android:pathData="M115,95 H125 V105 H115 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M135,95 H145 V105 H135 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M115,115 H125 V125 H115 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M135,115 H145 V125 H135 Z" />
+
+    <!-- Column 2 -->
+    <path android:fillColor="#0F172A" android:pathData="M115,135 H125 V145 H115 Z" />
+    <path android:fillColor="#0284C7" android:pathData="M125,125 H135 V135 H125 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M135,145 H145 V155 H135 Z" />
+
+    <!-- Column 3 -->
+    <path android:fillColor="#0F172A" android:pathData="M155,145 H165 V155 H155 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M175,145 H185 V155 H175 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M155,165 H165 V175 H155 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M185,165 H195 V175 H185 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M165,185 H175 V195 H165 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M185,185 H195 V195 H185 Z" />
+
+    <!-- Middle Data Block -->
+    <path android:fillColor="#0F172A" android:pathData="M115,165 H135 V185 H115 Z" />
+    <path android:fillColor="#0F172A" android:pathData="M135,175 H145 V195 H135 Z" />
+
+    <!-- Center InnovateX Brand Badge on QR -->
+    <path
+        android:fillColor="#0F172A"
+        android:pathData="M112,122 H148 V158 H112 Z" />
+    <path
+        android:strokeColor="#0284C7"
+        android:strokeWidth="1.5"
+        android:fillColor="#1E293B"
+        android:pathData="M114,124 H146 V156 H114 Z" />
+    <!-- Lightbulb symbol inside center badge -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M130,130 C126,130 123,133 123,137 C123,140 125,142 126,144 L134,144 C135,142 137,140 137,137 C137,133 134,130 130,130 Z" />
+
+    <!-- Bottom Scanner Laser Line -->
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M60,145 L200,145" />
+
+    <!-- Bottom Instructions Footer -->
+    <path
+        android:fillColor="#F1F5F9"
+        android:pathData="M20,220 H240 V248 H20 Z" />
+</vector>

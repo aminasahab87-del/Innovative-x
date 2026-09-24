@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="280dp"
+    android:height="280dp"
+    android:viewportWidth="280"
+    android:viewportHeight="280">
+
+    <!-- Dark Background Frame matching uploaded QR image -->
+    <path
+        android:pathData="M0,0 H280 V280 H0 Z"
+        android:fillColor="#18181B" />
+
+    <!-- Decorative Gold Coins in Background -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M20,30 A12,12 0 1,0 44,30 A12,12 0 1,0 20,30 Z" />
+    <path
+        android:fillColor="#D97706"
+        android:pathData="M100,18 A10,10 0 1,0 120,18 A10,10 0 1,0 100,18 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M230,200 A16,16 0 1,0 262,200 A16,16 0 1,0 230,200 Z" />
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M210,250 A8,8 0 1,0 226,250 A8,8 0 1,0 210,250 Z" />
+
+    <!-- Decorative Currency Notes in Background -->
+    <path
+        android:fillColor="#10B981"
+        android:pathData="M40,10 L65,5 L58,25 L33,30 Z" />
+    <path
+        android:fillColor="#059669"
+        android:pathData="M240,260 L270,245 L260,275 L230,280 Z" />
+
+    <!-- Central White QR Code Body Square -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M35,15 H245 V225 H35 Z" />
+
+    <!-- QR Code Outer Finder Pattern 1 (Top-Left) -->
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M48,28 H100 V80 H48 Z" />
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M56,36 H92 V72 H56 Z" />
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M64,44 H84 V64 H64 Z" />
+
+    <!-- QR Code Outer Finder Pattern 2 (Top-Right) -->
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M180,28 H232 V80 H180 Z" />
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M188,36 H224 V72 H188 Z" />
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M196,44 H216 V64 H196 Z" />
+
+    <!-- QR Code Outer Finder Pattern 3 (Bottom-Left) -->
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M48,160 H100 V212 H48 Z" />
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M56,168 H92 V204 H56 Z" />
+    <path
+        android:fillColor="#18181B"
+        android:pathData="M64,176 H84 V196 H64 Z" />
+
+    <!-- QR Code Matrix Pixels / Modules matching uploaded image structure -->
+    <!-- Alignment / Timing Patterns -->
+    <path android:fillColor="#18181B" android:pathData="M112,28 H124 V40 H112 Z" />
+    <path android:fillColor="#18181B" android:pathData="M136,28 H148 V40 H136 Z" />
+    <path android:fillColor="#18181B" android:pathData="M160,28 H168 V52 H160 Z" />
+
+    <path android:fillColor="#18181B" android:pathData="M112,52 H124 V76 H112 Z" />
+    <path android:fillColor="#18181B" android:pathData="M136,52 H148 V64 H136 Z" />
+    <path android:fillColor="#18181B" android:pathData="M148,64 H160 V88 H148 Z" />
+
+    <!-- Middle Left Modules -->
+    <path android:fillColor="#18181B" android:pathData="M48,92 H60 V116 H48 Z" />
+    <path android:fillColor="#18181B" android:pathData="M72,92 H96 V104 H72 Z" />
+    <path android:fillColor="#18181B" android:pathData="M108,92 H120 V116 H108 Z" />
+
+    <path android:fillColor="#18181B" android:pathData="M60,116 H72 V140 H60 Z" />
+    <path android:fillColor="#18181B" android:pathData="M84,116 H108 V128 H84 Z" />
+
+    <!-- Middle Right Modules -->
+    <path android:fillColor="#18181B" android:pathData="M168,92 H192 V104 H168 Z" />
+    <path android:fillColor="#18181B" android:pathData="M204,92 H228 V116 H204 Z" />
+    <path android:fillColor="#18181B" android:pathData="M180,116 H192 V140 H180 Z" />
+    <path android:fillColor="#18181B" android:pathData="M204,128 H216 V152 H204 Z" />
+
+    <!-- Bottom Right Modules -->
+    <path android:fillColor="#18181B" android:pathData="M112,160 H136 V172 H112 Z" />
+    <path android:fillColor="#18181B" android:pathData="M148,160 H160 V184 H148 Z" />
+    <path android:fillColor="#18181B" android:pathData="M172,160 H184 V172 H172 Z" />
+    <path android:fillColor="#18181B" android:pathData="M196,160 H220 V172 H196 Z" />
+
+    <path android:fillColor="#18181B" android:pathData="M124,184 H148 V196 H124 Z" />
+    <path android:fillColor="#18181B" android:pathData="M160,184 H172 V212 H160 Z" />
+    <path android:fillColor="#18181B" android:pathData="M184,184 H208 V196 H184 Z" />
+    <path android:fillColor="#18181B" android:pathData="M220,184 H232 V212 H220 Z" />
+
+    <path android:fillColor="#18181B" android:pathData="M112,200 H124 V212 H112 Z" />
+    <path android:fillColor="#18181B" android:pathData="M136,200 H148 V212 H136 Z" />
+    <path android:fillColor="#18181B" android:pathData="M172,200 H196 V212 H172 Z" />
+
+    <!-- Center Emblem Circle matching uploaded bird logo -->
+    <path
+        android:fillColor="#1E130B"
+        android:pathData="M140,120m-20,0a20,20 0 1,0 40,0a20,20 0 1,0 -40,0" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M140,120m-19,0a19,19 0 1,0 38,0a19,19 0 1,0 -38,0" />
+
+    <!-- Golden Winged Bird Icon in Center Circle -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M132,126 C136,122 142,112 148,110 C144,115 142,120 144,124 C140,121 136,122 132,126 Z" />
+    <path
+        android:fillColor="#FBBF24"
+        android:pathData="M136,128 C140,125 145,118 150,116 C147,120 145,124 146,128 C143,126 139,126 136,128 Z" />
+</vector>

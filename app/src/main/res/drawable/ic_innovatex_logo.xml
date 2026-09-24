@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- Glowing Yellow/Orange Lightbulb Rays on Top -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M100,10 L100,18 M74,22 L80,28 M126,22 L120,28 M60,40 L68,42 M140,40 L132,42" />
+
+    <!-- Lightbulb Outer Bulb Glow -->
+    <path
+        android:pathData="M100,20 C88,20 80,28 80,40 C80,48 86,53 88,58 L112,58 C114,53 120,48 120,40 C120,28 112,20 100,20 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="270"
+                android:endColor="#F59E0B"
+                android:startColor="#FDE047"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Lightbulb Filament Lines -->
+    <path
+        android:strokeColor="#B45309"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M94,58 L94,44 C94,40 106,40 106,44 L106,58" />
+
+    <!-- Student Graduation Cap above Person -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M100,52 L118,60 L100,68 L82,60 Z" />
+    <path
+        android:fillColor="#1D4ED8"
+        android:pathData="M90,65 L90,72 C90,75 110,75 110,72 L110,65 Z" />
+    <!-- Tassel -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000"
+        android:pathData="M112,62 L115,70" />
+
+    <!-- Person Head -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M100,70m-8,0a8,8 0 1,0 16,0a8,8 0 1,0 -16,0" />
+
+    <!-- Student Raising Arms / Person Body inside X -->
+    <path
+        android:fillColor="#1D4ED8"
+        android:pathData="M100,80 L76,64 L84,60 L100,75 L116,60 L124,64 Z" />
+
+    <!-- Stylized Left Arm of X (Cyan Blue Gradient) -->
+    <path
+        android:pathData="M65,70 L85,70 L135,135 L115,135 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="135"
+                android:endColor="#0284C7"
+                android:startColor="#38BDF8"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Stylized Right Arm of X (Purple Gradient) -->
+    <path
+        android:pathData="M135,70 L115,70 L65,135 L85,135 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="45"
+                android:endColor="#9333EA"
+                android:startColor="#C084FC"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Smooth Curved Blue Orbital Ring Sweeping Around X -->
+    <path
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M56,112 C50,105 52,90 75,85 C110,78 150,82 146,95 C142,108 95,120 58,110">
+        <aapt:attr name="android:strokeColor">
+            <gradient
+                android:angle="0"
+                android:endColor="#3B82F6"
+                android:startColor="#0284C7"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Bottom Decorative Underline with Mini Mortarboard -->
+    <path
+        android:strokeColor="#0284C7"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M50,185 L85,185" />
+    <path
+        android:strokeColor="#9333EA"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M115,185 L150,185" />
+
+    <!-- Mini Graduation Cap in Underline Center -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M100,180 L108,184 L100,188 L92,184 Z" />
+</vector>

@@ -1,0 +1,6 @@
+{
+  "name": "InnovateX",
+  "description": "Student innovation platform to submit, review, and discover science projects, inventions, prototypes, and experiments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
