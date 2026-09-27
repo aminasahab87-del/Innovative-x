@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.model.InnovationCategory
+import com.example.ui.components.AdsterraAdView
 import com.example.ui.components.ArduinoUnoBanner
 import com.example.ui.components.CategoryPill
 import com.example.ui.components.FeaturedProjectCard
@@ -139,32 +140,37 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // Interactive Search Box
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = { },
-                    readOnly = true,
-                    placeholder = { Text("Search science projects, robotics, AI...", fontSize = 14.sp) },
-                    leadingIcon = {
+                Surface(
+                    onClick = { onNavigateToExplore(null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("home_search_bar"),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
                             tint = MaterialTheme.colorScheme.primary
                         )
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .clickable { onNavigateToExplore(null) }
-                        .testTag("home_search_bar"),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    enabled = false
-                )
+                        Text(
+                            text = "Search science projects, robotics, AI...",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
 
@@ -231,6 +237,14 @@ fun HomeScreen(
                     }
                 }
             }
+        }
+
+        // Sponsored Adsterra 300x250 Medium Rectangle (Placed between Featured Innovations and Categories)
+        item {
+            AdsterraAdView(
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                adHeight = 265.dp
+            )
         }
 
         // Categories Section

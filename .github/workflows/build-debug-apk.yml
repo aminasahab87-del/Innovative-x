@@ -1,33 +1,35 @@
-name: Build Debug APK
+name: Build Android APK
 
 on:
   push:
     branches: [ main, master ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
     inputs:
       create_release:
-        description: 'Publish as a GitHub Release?'
+        description: 'Publish as GitHub Release?'
         required: false
         type: boolean
         default: true
       release_tag:
-        description: 'Release Tag (e.g. v2.4.0)'
+        description: 'Release Tag (e.g. v2.5.0)'
         required: false
         type: string
-        default: 'v2.4.0'
+        default: 'v2.5.0'
 
 permissions:
   contents: write
 
 jobs:
   build:
-    name: Build & Export Debug APK
+    name: Build & Export Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Java 21 (Temurin)
@@ -37,17 +39,24 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Restore Keystore & Configuration
+      - name: Configure Build Environment
         run: |
+          # 1. Restore debug keystore if base64 file exists
           if [ -f debug.keystore.base64 ]; then
             base64 -d debug.keystore.base64 > debug.keystore 2>/dev/null || true
             echo "Restored debug.keystore from base64"
           fi
+
+          # 2. Ensure Android SDK local.properties
+          if [ -n "$ANDROID_HOME" ]; then
+            echo "sdk.dir=$ANDROID_HOME" > local.properties
+          fi
+
+          # 3. Fallback .env file for secrets gradle plugin if not present
           if [ ! -f .env ]; then
-            echo "GEMINI_API_KEY=dummy_key" > .env
+            echo "GEMINI_API_KEY=dummy_key_for_build" > .env
             echo "Created fallback .env"
           fi
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
 
       - name: Grant Execute Permission to gradlew
         run: chmod +x gradlew
@@ -55,49 +64,53 @@ jobs:
       - name: Build Debug APK with Gradle
         run: ./gradlew assembleDebug --stacktrace --no-daemon
 
-      - name: Locate and Stage APK
+      - name: Stage APK Artifacts
         run: |
           mkdir -p build-artifacts
           APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -n "$APK_PATH" ]; then
-            cp "$APK_PATH" build-artifacts/InnovateX-debug.apk
-            echo "Staged APK to build-artifacts/InnovateX-debug.apk"
+            cp "$APK_PATH" build-artifacts/InnovateX-v2.5.0-debug.apk
+            cp "$APK_PATH" build-artifacts/app-debug.apk
+            echo "Successfully staged APK from $APK_PATH"
+            ls -la build-artifacts/
           else
-            echo "Error: Debug APK not found!"
+            echo "Error: Debug APK not found in app/build/outputs/apk/debug!"
             find app/build/outputs -type f || true
             exit 1
           fi
 
-      - name: Upload Debug APK Artifact
+      - name: Upload APK to GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: InnovateX-Debug-APK
-          path: build-artifacts/InnovateX-debug.apk
+          name: InnovateX-Android-APK
+          path: build-artifacts/*.apk
           retention-days: 30
 
-      - name: Publish GitHub Release
-        if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/')
+      - name: Create or Update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.create_release == true)
         uses: ncipollo/release-action@v1
         continue-on-error: true
         with:
           artifacts: "build-artifacts/*.apk"
-          tag: ${{ inputs.release_tag || 'v2.4.0' }}
-          name: "InnovateX Debug Build ${{ inputs.release_tag || 'v2.4.0' }}"
+          tag: ${{ inputs.release_tag || github.ref_name }}
+          name: "InnovateX Build ${{ inputs.release_tag || github.ref_name }}"
           body: |
-            ## 🚀 InnovateX Android Debug APK (${{ inputs.release_tag || 'v2.4.0' }})
+            ## 🚀 InnovateX Android APK (${{ inputs.release_tag || github.ref_name }})
 
-            ### 📥 Download:
-            Download **`InnovateX-debug.apk`** below to test and install directly on your Android phone or emulator.
+            ### 📥 Download & Install
+            Download **`InnovateX-v2.5.0-debug.apk`** below to install and run directly on your Android device or emulator.
 
-            ### 📱 What's Included:
-            - **Developer**: Aafaq Hussain
-            - **App**: InnovateX STEM & Robotics Platform (v2.4.0)
-            - **Features**:
-              - 🎥 Zoom Live Classes with Meeting ID & Password
-              - ⭐ Star Rating & Constructive Peer Reviews
-              - 🔒 JazzCash/EasyPaisa QR Scanner Subscription (250 PKR / 10 Days)
-              - 🛡️ Admin & Reviewer Verification Portal
-              - 🎓 Student Prototype Submissions & AI Scoring
+            ### 📱 Release Highlights:
+            - **App Version**: v2.5.0
+            - **Platform**: Android (Jetpack Compose & Material 3)
+            - **Adsterra Integration**: High-earning 300x250 Medium Rectangle ad unit
+            - **Key Features**:
+              - 🚀 STEM & Robotics Student Innovation Showcase
+              - 🎥 Zoom Live Class Schedules & Links
+              - 💳 QR-based Verification & Subscriptions
+              - 🤖 AI Innovation Feedback Service
+              - ⭐ Peer Reviews & Rating System
           allowUpdates: true
           makeLatest: true
           token: ${{ secrets.GITHUB_TOKEN }}
+
